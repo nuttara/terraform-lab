@@ -1,23 +1,35 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws-terraform-nam_USR')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-terraform-nam_PSW')
+    }
+
     stages {
 
-        stage('Terraform Plan') {
+        stage('Terraform Init') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-terraform-nam',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
-
-                    sh 'terraform init'
-                    sh 'terraform plan'
-                }
+                sh 'terraform init'
             }
         }
 
+        stage('Terraform Plan') {
+            steps {
+                sh 'terraform plan'
+            }
+        }
+
+        stage('Approve') {
+            steps {
+                input 'Apply Terraform?'
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                sh 'terraform apply -auto-approve'
+            }
+        }
     }
 }
