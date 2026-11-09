@@ -1,39 +1,44 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(
+            name: 'ACTION',
+            choices: ['plan', 'apply', 'destroy'],
+            description: 'Terraform Action'
+        )
+    }
+
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws-terraform-nam_USR')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-terraform-nam_PSW')
+        AWS_DEFAULT_REGION    = 'ap-southeast-1'
+    }
+
     stages {
 
-        stage('Terraform Plan') {
+        stage('Terraform Init') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-terraform-nam',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
-                    sh 'terraform init'
-                    sh 'terraform plan'
-                }
+                sh 'terraform init'
             }
         }
 
-        stage('Approve') {
+        stage('Terraform Action') {
             steps {
-                input 'Apply Terraform?'
-            }
-        }
+                script {
 
-        stage('Terraform Apply') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-terraform-nam',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
-                    sh 'terraform apply -auto-approve'
+                    if (params.ACTION == 'plan') {
+                        sh 'terraform plan'
+                    }
+
+                    if (params.ACTION == 'apply') {
+                        sh 'terraform apply -auto-approve'
+                    }
+
+                    if (params.ACTION == 'destroy') {
+                        sh 'terraform destroy -auto-approve'
+                    }
+
                 }
             }
         }
