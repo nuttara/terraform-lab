@@ -2,18 +2,16 @@ pipeline {
     agent any
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Terraform Version') {
+        stage('List Files') {
             steps {
-                bat 'terraform --version'
+                sh 'ls -la'
             }
         }
-
     }
 }
