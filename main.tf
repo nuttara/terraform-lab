@@ -8,8 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  profile = "terraform-nam"
-  region  = "ap-southeast-1"
+  region = "ap-southeast-1"
 }
 
 resource "aws_s3_bucket" "test" {

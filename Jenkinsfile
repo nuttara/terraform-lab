@@ -3,28 +3,21 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Terraform Version') {
-            steps {
-                sh 'terraform --version'
-            }
-        }
-
-        stage('Terraform Init') {
-            steps {
-                sh 'terraform init'
-            }
-        }
-
         stage('Terraform Plan') {
             steps {
-                sh 'terraform plan'
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-terraform-nam',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
+
+                    sh 'terraform init'
+                    sh 'terraform plan'
+                }
             }
         }
+
     }
 }
