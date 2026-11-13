@@ -1,0 +1,12 @@
+# EC2 Instance
+resource "aws_instance" "jenkins_slave" {
+  count         = 2  # This creates 2 instances
+  ami           = "ami-0d07675d294f17973"  # Replace with your desired AMI ID
+  instance_type = "t2.micro"               # Instance type
+  subnet_id     = data.aws_subnet.private-a-subnet.id
+  vpc_security_group_ids = [data.aws_security_group.private-sg.id]
+  key_name      = data.aws_key_pair.ec2-aws-key.key_name  # Use the key created by Terraform
+  tags = {
+    Name = "Jenkins Slave ${count.index + 1}"
+  }
+}

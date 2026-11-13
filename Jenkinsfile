@@ -1,57 +1,61 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+    }
+
     parameters {
         choice(
             name: 'ACTION',
             choices: ['plan', 'apply', 'destroy'],
-            description: 'Terraform Action'
+            description: 'เลือกคำสั่ง Terraform ที่ต้องการทำงาน'
+        )
+        choice(
+            name: 'TFVARS_FILE',
+            choices: ['fs-aws-np.tfvars'],
+            description: 'เลือกไฟล์ตัวแปร Environment'
         )
     }
 
     stages {
-
         stage('Terraform Init') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-terraform-nam',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                    )
-                ]) {
-                    sh 'terraform init'
-                }
+                sh 'terraform init'
             }
         }
 
-        stage('Terraform Action') {
+        stage('Terraform Plan') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'aws-terraform-nam',
-                        usernameVariable: 'AWS_ACCESS_KEY_ID',
-                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                sh "terraform plan -var-file=${params.TFVARS_FILE}"
+            }
+        }
+
+        stage('Terraform Execute') {
+            when {
+                expression { params.ACTION == 'apply' || params.ACTION == 'destroy' }
+            }
+            steps {
+                script {
+                    input(
+                        message: "ยืนยันการรันคำสั่ง terraform ${params.ACTION} ใช่หรือไม่?",
+                        ok: 'ยืนยัน'
                     )
-                ]) {
-                    script {
 
-                        if (params.ACTION == 'plan') {
-                            sh 'terraform plan'
-                        }
-
-                        if (params.ACTION == 'apply') {
-                            sh 'terraform apply -auto-approve'
-                        }
-                        
-                        if (params.ACTION == 'destroy') {
-                            input 'Confirm Destroy?'
-                            sh 'terraform destroy -auto-approve'
-                        }
-
+                    if (params.ACTION == 'apply') {
+                        sh "terraform apply -var-file=${params.TFVARS_FILE} -auto-approve"
+                    } else if (params.ACTION == 'destroy') {
+                        sh "terraform destroy -var-file=${params.TFVARS_FILE} -auto-approve"
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
         }
     }
 }
